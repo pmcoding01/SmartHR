@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SmartHR - ระบบบันทึกข้อมูลบุคลากรองค์กร</title>
+  
+  <!-- Google Fonts: Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Kanit', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              blue: '#E0F2FE',
+              blueDark: '#0284C7',
+              pink: '#FCE7F3',
+              pinkDark: '#DB2777',
+              yellow: '#FEF3C7',
+              yellowDark: '#D97706',
+              green: '#DCFCE7',
+              greenDark: '#16A34A',
+              purple: '#F3E8FF',
+              purpleDark: '#9333EA'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Config File -->
+  <script src="config.js"></script>
+
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+    .soft-shadow { box-shadow: 0 10px 25px -5px rgba(244, 114, 182, 0.1), 0 8px 10px -6px rgba(244, 114, 182, 0.05); }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #FAF5FF; }
+    ::-webkit-scrollbar-thumb { background: #F472B6; border-radius: 10px; }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .animate-slide-up { animation: slideUp 0.25s ease-out forwards; }
+
+    /* Class สำหรับซ่อน Sidebar เมื่อยังไม่ Login */
+    #sidebar.hidden-sidebar {
+      display: none !important;
+    }
+
+    main {
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-700 bg-slate-50 flex flex-col md:flex-row antialiased selection:bg-pink-200">
+
+  <!-- LOADER OVERLAY -->
+  <div id="loader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm hidden">
+    <div class="relative w-16 h-16">
+      <div class="absolute inset-0 rounded-full border-4 border-pink-200 animate-ping"></div>
+      <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-sky-400 border-b-amber-300 border-l-emerald-400 animate-spin"></div>
+    </div>
+    <p id="loader-text" class="mt-4 text-sm font-medium text-slate-600 animate-pulse">กำลังโหลดข้อมูล...</p>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed top-4 right-4 z-50 transform transition-all duration-300 -translate-y-full opacity-0 pointer-events-none">
+    <div id="toast-content" class="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg border bg-white text-slate-800 text-sm font-medium">
+      <i id="toast-icon" data-lucide="info" class="w-5 h-5 text-sky-500"></i>
+      <span id="toast-message">แจ้งเตือน</span>
+    </div>
+  </div>
+
+  <!-- DESKTOP SIDEBAR -->
+  <aside id="sidebar" class="hidden md:flex flex-col w-64 bg-white border-r border-pink-100 p-5 shadow-sm shrink-0 hidden-sidebar">
+    <div class="flex items-center gap-3 px-2 py-3 mb-6 bg-pink-50/60 rounded-2xl border border-pink-100">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-400 to-sky-400 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+        🌸
+      </div>
+      <div>
+        <h1 class="font-bold text-lg text-slate-800 leading-none">SmartHR</h1>
+        <span class="text-xs text-slate-400 font-light">ระบบบุคลากรน่ารัก</span>
+      </div>
+    </div>
+
+    <!-- User Profile Summary in Sidebar -->
+    <div id="sidebar-user-card" class="mb-6 p-3 bg-sky-50/50 rounded-2xl border border-sky-100 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-sky-200 flex items-center justify-center text-sky-600 font-semibold" id="sidebar-avatar">
+        U
+      </div>
+      <div class="overflow-hidden">
+        <p id="sidebar-user-name" class="text-sm font-semibold text-slate-700 truncate">ชื่อผู้ใช้งาน</p>
+        <span id="sidebar-user-role" class="inline-block text-[10px] px-2 py-0.5 rounded-full bg-pink-100 text-pink-600 font-medium capitalize">Role</span>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="space-y-1.5 flex-1" id="desktop-nav">
+      <!-- Menu Items rendered dynamically -->
+    </nav>
+
+    <!-- Logout Button Desktop -->
+    <button onclick="confirmLogout()" class="mt-auto flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors">
+      <i data-lucide="log-out" class="w-5 h-5"></i>
+      <span class="text-sm font-medium">ออกจากระบบ</span>
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-y-auto pb-24 md:pb-6">
+    
+    <!-- TOP HEADER -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-pink-100 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-pink-400 flex md:hidden items-center justify-center text-white font-bold text-sm">
+          🌸
+        </div>
+        <h2 id="page-title" class="text-lg font-bold text-slate-800">หน้าแรก</h2>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="header-user-badge" class="hidden text-xs px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-medium">
+          Guest Mode
+        </span>
+        <button id="btn-login-header" onclick="navigateTo('login')" class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-pink-400 to-sky-400 text-white rounded-xl text-xs font-semibold hover:opacity-90 shadow-sm transition">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>เข้าสู่ระบบ</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- VIEW CONTAINERS -->
+    <div class="p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
+
+      <section id="view-landing" class="view-section space-y-6">
+        <!-- Hero Banner -->
+        <div class="bg-gradient-to-r from-pink-100 via-purple-100 to-sky-100 rounded-3xl p-6 md:p-8 soft-shadow relative overflow-hidden">
+          <div class="max-w-2xl space-y-3 relative z-10">
+            <span class="px-3 py-1 bg-white/80 rounded-full text-xs font-semibold text-pink-500 shadow-sm">🌱 Welcome to SmartHR</span>
+            <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800">ระบบบริหารจัดการข้อมูลบุคลากรองค์กร</h1>
+            <p class="text-slate-600 text-sm md:text-base">จัดการข้อมูลพนักงาน กำหนดสิทธิ์การใช้งาน (Role) และดูสรุปภาพรวมสถิติต่างๆ ได้สะดวกรวดเร็ว ในสไตล์มินิมอลพาสเทลน่ารัก</p>
+            <div class="pt-2 flex flex-wrap gap-3">
+              <button id="landing-cta-btn" onclick="navigateTo('login')" class="px-5 py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-2xl shadow-md transition transform active:scale-95 flex items-center gap-2 text-sm">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> เข้าสู่ระบบเพื่อใช้งาน
+              </button>
+            </div>
+          </div>
+          <div class="absolute -right-6 -bottom-6 w-40 h-40 md:w-64 md:h-64 bg-pink-300/20 rounded-full blur-2xl"></div>
+        </div>
+
+        <!-- Overview Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-pink-100 soft-shadow flex items-center gap-3">
+            <div class="p-3 bg-pink-100 text-pink-500 rounded-xl">
+              <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">พนักงานทั้งหมด</p>
+              <h3 id="stat-total-emp" class="text-xl font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-sky-100 soft-shadow flex items-center gap-3">
+            <div class="p-3 bg-sky-100 text-sky-500 rounded-xl">
+              <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">จำนวนแผนก</p>
+              <h3 id="stat-total-dept" class="text-xl font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-amber-100 soft-shadow flex items-center gap-3">
+            <div class="p-3 bg-amber-100 text-amber-500 rounded-xl">
+              <i data-lucide="wallet" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">เงินเดือนเฉลี่ย</p>
+              <h3 id="stat-avg-salary" class="text-xl font-bold text-slate-800">฿0</h3>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-emerald-100 soft-shadow flex items-center gap-3">
+            <div class="p-3 bg-emerald-100 text-emerald-500 rounded-xl">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">ผู้ใช้งานในระบบ</p>
+              <h3 id="stat-total-users" class="text-xl font-bold text-slate-800">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white p-5 rounded-3xl border border-slate-100 soft-shadow">
+            <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-pink-400"></i> สัดส่วนพนักงานแยกตามแผนก
+            </h4>
+            <div class="relative h-60">
+              <canvas id="deptChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white p-5 rounded-3xl border border-slate-100 soft-shadow">
+            <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i> งบประมาณเงินเดือนตามแผนก
+            </h4>
+            <div class="relative h-60">
+              <canvas id="salaryChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-login" class="view-section hidden max-w-md mx-auto py-8">
+        <div class="bg-white p-6 md:p-8 rounded-3xl border border-pink-100 soft-shadow space-y-6">
+          <div class="text-center space-y-2">
+            <div class="w-16 h-16 bg-gradient-to-tr from-pink-300 to-sky-300 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-sm">
+              🔐
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">เข้าสู่ระบบ SmartHR</h2>
+            <p class="text-xs text-slate-400">กรุณากรอก Username และ Password ของคุณ</p>
+          </div>
+
+          <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อผู้ใช้งาน (Username)</label>
+              <div class="relative">
+                <i data-lucide="user" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="login-username" required placeholder="เช่น admin, hr, somchai" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400 transition">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">รหัสผ่าน (Password)</label>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400 transition">
+                <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                  <i id="eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                <input type="checkbox" id="remember-me" class="rounded border-slate-300 text-pink-500 focus:ring-pink-400">
+                <span>จำรหัสผ่าน</span>
+              </label>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-gradient-to-r from-pink-400 to-sky-400 text-white rounded-xl font-semibold shadow-md hover:opacity-95 transition transform active:scale-95 text-sm">
+              เข้าสู่ระบบ
+            </button>
+          </form>
+
+          <!-- Quick Credentials Info -->
+          <div class="pt-4 border-t border-slate-100 text-xs space-y-1 text-slate-500">
+            <p class="font-semibold text-slate-700">บัญชีสำหรับทดสอบ:</p>
+            <p>👑 Admin: <code class="bg-slate-100 px-1 rounded">admin</code> / <code class="bg-slate-100 px-1 rounded">admin123</code></p>
+            <p>💼 HR: <code class="bg-slate-100 px-1 rounded">hr</code> / <code class="bg-slate-100 px-1 rounded">hr123</code></p>
+            <p>👤 Employee: <code class="bg-slate-100 px-1 rounded">somchai</code> / <code class="bg-slate-100 px-1 rounded">emp123</code></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-employees" class="view-section hidden space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 class="text-xl font-bold text-slate-800">รายการพนักงานทั้งหมด</h3>
+            <p class="text-xs text-slate-400">จัดการข้อมูลพนักงาน ค้นหา แก้ไข และบันทึกข้อมูลใหม่</p>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button id="btn-add-emp" onclick="openEmployeeModal()" class="flex-1 sm:flex-none px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition">
+              <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มพนักงานใหม่
+            </button>
+            <button id="btn-export-emp" onclick="exportEmployeeReport()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition">
+              <i data-lucide="download" class="w-4 h-4"></i> รายงาน
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-100 soft-shadow flex items-center gap-2">
+          <i data-lucide="search" class="w-5 h-5 text-slate-400 ml-2"></i>
+          <input type="text" id="emp-search" oninput="renderEmployeeTable()" placeholder="ค้นหาด้วยชื่อ, รหัสพนักงาน, แผนก..." class="w-full text-sm bg-transparent border-none focus:outline-none">
+        </div>
+
+        <!-- Employee Table -->
+        <div class="bg-white rounded-3xl border border-slate-100 soft-shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-pink-50/50 text-slate-600 font-semibold border-b border-pink-100">
+                <tr>
+                  <th class="p-4">พนักงาน</th>
+                  <th class="p-4">รหัส</th>
+                  <th class="p-4">แผนก/ตำแหน่ง</th>
+                  <th class="p-4">เงินเดือน</th>
+                  <th class="p-4">เบอร์โทร</th>
+                  <th class="p-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="employee-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-profile" class="view-section hidden max-w-2xl mx-auto space-y-6">
+        <div class="bg-white p-6 rounded-3xl border border-pink-100 soft-shadow space-y-6">
+          <div class="flex flex-col items-center text-center space-y-3">
+            <div class="relative">
+              <div id="profile-avatar-container" class="w-24 h-24 rounded-full bg-pink-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
+                <span id="profile-avatar-text" class="text-3xl font-bold text-pink-500">E</span>
+                <img id="profile-avatar-img" src="" alt="Profile" class="w-full h-full object-cover hidden" onerror="handleImageError(this)">
+              </div>
+            </div>
+            <div>
+              <h3 id="profile-name" class="text-xl font-bold text-slate-800">ชื่อ-สกุล</h3>
+              <p id="profile-role" class="text-xs text-pink-500 font-medium capitalize">Employee</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-4 border-t border-slate-100">
+            <div class="p-3 bg-slate-50 rounded-2xl">
+              <span class="text-xs text-slate-400 block">รหัสพนักงาน</span>
+              <span id="profile-code" class="font-semibold text-slate-700">-</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-2xl">
+              <span class="text-xs text-slate-400 block">แผนก / ตำแหน่ง</span>
+              <span id="profile-dept-pos" class="font-semibold text-slate-700">-</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-2xl">
+              <span class="text-xs text-slate-400 block">เงินเดือน</span>
+              <span id="profile-salary" class="font-semibold text-slate-700">-</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-2xl">
+              <span class="text-xs text-slate-400 block">เบอร์โทรศัพท์</span>
+              <span id="profile-phone" class="font-semibold text-slate-700">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-users" class="view-section hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-xl font-bold text-slate-800">จัดการผู้ใช้งานระบบ (Users)</h3>
+            <p class="text-xs text-slate-400">สร้าง และกำหนดสิทธิ์การเข้าใช้งานระบบ (Admin / HR / Employee)</p>
+          </div>
+          <button onclick="openUserModal()" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-medium text-sm flex items-center gap-2 shadow-sm transition">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ใช้ใหม่
+          </button>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-100 soft-shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-sky-50/50 text-slate-600 font-semibold border-b border-sky-100">
+                <tr>
+                  <th class="p-4">ชื่อ-สกุล</th>
+                  <th class="p-4">Username</th>
+                  <th class="p-4">สิทธิ์ (Role)</th>
+                  <th class="p-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="user-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <div id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-100 p-2 z-40 md:hidden flex justify-around items-center">
+    <!-- Rendered via JS -->
+  </div>
+
+  <!-- ADMIN BOTTOM PANEL GRID MODAL (Mobile) -->
+  <div id="admin-panel-modal" class="fixed inset-0 z-50 modal-backdrop hidden flex flex-col justify-end md:hidden">
+    <div class="bg-white rounded-t-3xl p-6 space-y-4 border-t border-pink-200 animate-slide-up">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="layout-grid" class="w-5 h-5 text-pink-500"></i> เมนูจัดการระบบ (Admin Panel)
+        </h3>
+        <button onclick="toggleAdminPanel(false)" class="p-2 text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button onclick="navigateTo('landing'); toggleAdminPanel(false);" class="p-4 bg-pink-50 rounded-2xl flex flex-col items-center gap-2 text-pink-600 font-medium text-xs">
+          <i data-lucide="home" class="w-6 h-6"></i> หน้าแรก / Dashboard
+        </button>
+        <button onclick="navigateTo('employees'); toggleAdminPanel(false);" class="p-4 bg-sky-50 rounded-2xl flex flex-col items-center gap-2 text-sky-600 font-medium text-xs">
+          <i data-lucide="users" class="w-6 h-6"></i> จัดการพนักงาน
+        </button>
+        <button onclick="navigateTo('users'); toggleAdminPanel(false);" class="p-4 bg-purple-50 rounded-2xl flex flex-col items-center gap-2 text-purple-600 font-medium text-xs">
+          <i data-lucide="user-cog" class="w-6 h-6"></i> จัดการผู้ใช้งาน
+        </button>
+        <button onclick="confirmLogout(); toggleAdminPanel(false);" class="p-4 bg-rose-50 rounded-2xl flex flex-col items-center gap-2 text-rose-600 font-medium text-xs">
+          <i data-lucide="log-out" class="w-6 h-6"></i> ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT EMPLOYEE -->
+  <div id="modal-employee" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 space-y-4 soft-shadow my-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 id="modal-emp-title" class="font-bold text-slate-800">เพิ่มข้อมูลพนักงาน</h3>
+        <button onclick="closeEmployeeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="form-employee" onsubmit="saveEmployee(event)" class="space-y-4">
+        <input type="hidden" id="emp-id">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">รหัสพนักงาน</label>
+            <input type="text" id="emp-code" required placeholder="EMP001" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุล</label>
+            <input type="text" id="emp-fullname" required placeholder="สมชาย ใจดี" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">แผนก</label>
+            <input type="text" id="emp-dept" required placeholder="วิชาการ" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">ตำแหน่ง</label>
+            <input type="text" id="emp-pos" required placeholder="ครูประจำชั้น" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">เงินเดือน (บาท)</label>
+            <input type="number" id="emp-salary" step="0.01" required placeholder="25000" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">เบอร์โทรศัพท์</label>
+            <input type="tel" id="emp-phone" placeholder="081-234-5678" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-pink-400">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">รูปโปรไฟล์ (อัปโหลดระบบบีบอัดไฟล์)</label>
+          <input type="file" id="emp-avatar-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeEmployeeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 bg-pink-500 text-white rounded-xl text-sm font-semibold hover:bg-pink-600 shadow-sm">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT USER -->
+  <div id="modal-user" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 space-y-4 soft-shadow my-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 id="modal-user-title" class="font-bold text-slate-800">เพิ่มผู้ใช้งานระบบ</h3>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="form-user" onsubmit="saveUser(event)" class="space-y-4">
+        <input type="hidden" id="user-id">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อ-นามสกุล</label>
+          <input type="text" id="user-fullname" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-sky-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+          <input type="text" id="user-username" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-sky-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+          <input type="text" id="user-password" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-sky-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">สิทธิ์การใช้งาน (Role)</label>
+          <select id="user-role" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-sky-400">
+            <option value="employee">Employee (ดูข้อมูลตนเอง)</option>
+            <option value="hr">HR (จัดการพนักงาน)</option>
+            <option value="admin">Admin (จัดการทั้งหมด)</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm">ยกเลิก</button>
+          <button type="submit" class="px-4 py-2 bg-sky-500 text-white rounded-xl text-sm font-semibold hover:bg-sky-600 shadow-sm">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGOUT CONFIRMATION -->
+  <div id="modal-logout" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 soft-shadow">
+      <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="log-out" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-lg">ยืนยันการออกจากระบบ?</h3>
+        <p class="text-xs text-slate-500 mt-1">คุณจะต้องกรอกรหัสผ่านใหม่เพื่อเข้าใช้งานครั้งถัดไป</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="closeLogoutModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">ยกเลิก</button>
+        <button onclick="executeLogout()" class="flex-1 py-2.5 bg-rose-500 text-white rounded-xl font-medium text-sm hover:bg-rose-600 transition">ออกจากระบบ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let dbClient = null;
+    let currentUser = JSON.parse(localStorage.getItem('smarthr_user')) || null;
+    let employeesData = [];
+    let usersData = [];
+    let deptChartInstance = null;
+    let salaryChartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initSupabase();
+      lucide.createIcons();
+      checkRememberedUser();
+      checkAuthAndInit();
+    });
+
+    function initSupabase() {
+      if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+        showToast('กรุณากำหนดค่าใน config.js ก่อนเริ่มใช้งาน', 'error');
+        return;
+      }
+      dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    function checkRememberedUser() {
+      const savedUser = localStorage.getItem('smarthr_remembered');
+      if (savedUser) {
+        document.getElementById('login-username').value = savedUser;
+        document.getElementById('remember-me').checked = true;
+      }
+    }
+
+    function checkAuthAndInit() {
+      updateUIState();
+      loadLandingStats();
+      if (currentUser) {
+        if (currentUser.role === 'employee') {
+          loadEmployeeProfile();
+        } else {
+          fetchEmployees();
+          if (currentUser.role === 'admin') fetchUsers();
+        }
+      }
+    }
+
+    function navigateTo(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewId}`);
+      if (target) target.classList.remove('hidden');
+
+      const titles = {
+        'landing': 'หน้าแรก',
+        'login': 'เข้าสู่ระบบ',
+        'employees': 'จัดการข้อมูลพนักงาน',
+        'profile': 'ข้อมูลส่วนตัว',
+        'users': 'จัดการผู้ใช้งาน'
+      };
+      document.getElementById('page-title').innerText = titles[viewId] || 'SmartHR';
+
+      if (viewId === 'landing') loadLandingStats();
+      if (viewId === 'employees') fetchEmployees();
+      if (viewId === 'users') fetchUsers();
+      if (viewId === 'profile') loadEmployeeProfile();
+    }
+
+    function updateUIState() {
+      const sidebar = document.getElementById('sidebar');
+      const btnHeaderLogin = document.getElementById('btn-login-header');
+      const headerBadge = document.getElementById('header-user-badge');
+      const desktopNav = document.getElementById('desktop-nav');
+      const mobileNav = document.getElementById('mobile-bottom-nav');
+      const landingCtaBtn = document.getElementById('landing-cta-btn');
+
+      if (!currentUser) {
+        sidebar.classList.add('hidden-sidebar');
+        btnHeaderLogin.classList.remove('hidden');
+        headerBadge.classList.remove('hidden');
+        headerBadge.innerText = 'Guest Mode';
+        landingCtaBtn.classList.remove('hidden');
+        
+        mobileNav.innerHTML = `
+          <button onclick="navigateTo('landing')" class="flex flex-col items-center gap-1 text-pink-500">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px]">หน้าแรก</span>
+          </button>
+          <button onclick="navigateTo('login')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i data-lucide="log-in" class="w-5 h-5"></i>
+            <span class="text-[10px]">เข้าสู่ระบบ</span>
+          </button>
+        `;
+        navigateTo('landing');
+      } else {
+        sidebar.classList.remove('hidden-sidebar');
+        btnHeaderLogin.classList.add('hidden');
+        headerBadge.classList.add('hidden');
+        landingCtaBtn.classList.add('hidden');
+
+        document.getElementById('sidebar-user-name').innerText = currentUser.full_name;
+        document.getElementById('sidebar-user-role').innerText = currentUser.role;
+        document.getElementById('sidebar-avatar').innerText = currentUser.full_name.charAt(0);
+
+        let navHtml = `<button onclick="navigateTo('landing')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-600 hover:bg-pink-50 hover:text-pink-600 font-medium text-sm transition"><i data-lucide="home" class="w-5 h-5"></i> หน้าแรก</button>`;
+
+        if (currentUser.role === 'admin' || currentUser.role === 'hr') {
+          navHtml += `<button onclick="navigateTo('employees')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-600 hover:bg-pink-50 hover:text-pink-600 font-medium text-sm transition"><i data-lucide="users" class="w-5 h-5"></i> ข้อมูลพนักงาน</button>`;
+        }
+        if (currentUser.role === 'admin') {
+          navHtml += `<button onclick="navigateTo('users')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-600 hover:bg-pink-50 hover:text-pink-600 font-medium text-sm transition"><i data-lucide="user-cog" class="w-5 h-5"></i> จัดการผู้ใช้</button>`;
+        }
+        if (currentUser.role === 'employee') {
+          navHtml += `<button onclick="navigateTo('profile')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-600 hover:bg-pink-50 hover:text-pink-600 font-medium text-sm transition"><i data-lucide="user" class="w-5 h-5"></i> ข้อมูลของฉัน</button>`;
+        }
+        desktopNav.innerHTML = navHtml;
+
+        if (currentUser.role === 'admin') {
+          mobileNav.innerHTML = `
+            <button onclick="navigateTo('landing')" class="flex flex-col items-center gap-1 text-slate-500">
+              <i data-lucide="home" class="w-5 h-5"></i>
+              <span class="text-[10px]">หน้าแรก</span>
+            </button>
+            <button onclick="toggleAdminPanel(true)" class="flex flex-col items-center gap-1 text-white bg-gradient-to-r from-pink-400 to-sky-400 p-2.5 rounded-full shadow-lg transform -translate-y-3">
+              <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <button onclick="navigateTo('employees')" class="flex flex-col items-center gap-1 text-slate-500">
+              <i data-lucide="users" class="w-5 h-5"></i>
+              <span class="text-[10px]">พนักงาน</span>
+            </button>
+          `;
+        } else {
+          mobileNav.innerHTML = `
+            <button onclick="navigateTo('landing')" class="flex flex-col items-center gap-1 text-slate-500">
+              <i data-lucide="home" class="w-5 h-5"></i>
+              <span class="text-[10px]">หน้าแรก</span>
+            </button>
+            ${currentUser.role === 'hr' ? `
+            <button onclick="navigateTo('employees')" class="flex flex-col items-center gap-1 text-slate-500">
+              <i data-lucide="users" class="w-5 h-5"></i>
+              <span class="text-[10px]">พนักงาน</span>
+            </button>` : ''}
+            ${currentUser.role === 'employee' ? `
+            <button onclick="navigateTo('profile')" class="flex flex-col items-center gap-1 text-slate-500">
+              <i data-lucide="user" class="w-5 h-5"></i>
+              <span class="text-[10px]">โปรไฟล์</span>
+            </button>` : ''}
+            <button onclick="confirmLogout()" class="flex flex-col items-center gap-1 text-rose-400">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+              <span class="text-[10px]">ออกระบบ</span>
+            </button>
+          `;
+        }
+      }
+      lucide.createIcons();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      showLoader('กำลังตรวจสอบสิทธิ์...');
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      const remember = document.getElementById('remember-me').checked;
+
+      try {
+        const { data, error } = await dbClient
+          .from('users')
+          .select('*')
+          .eq('username', u)
+          .eq('password', p)
+          .single();
+
+        hideLoader();
+        if (error || !data) {
+          showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+          return;
+        }
+
+        currentUser = data;
+        localStorage.setItem('smarthr_user', JSON.stringify(currentUser));
+        
+        if (remember) {
+          localStorage.setItem('smarthr_remembered', u);
+        } else {
+          localStorage.removeItem('smarthr_remembered');
+        }
+
+        showToast(`ยินดีต้อนรับคุณ ${data.full_name}`, 'success');
+        updateUIState();
+
+        if (data.role === 'employee') {
+          navigateTo('profile');
+        } else {
+          navigateTo('landing');
+        }
+      } catch (err) {
+        hideLoader();
+        showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ', 'error');
+      }
+    }
+
+    function confirmLogout() {
+      document.getElementById('modal-logout').classList.remove('hidden');
+    }
+
+    function closeLogoutModal() {
+      document.getElementById('modal-logout').classList.add('hidden');
+    }
+
+    function executeLogout() {
+      currentUser = null;
+      localStorage.removeItem('smarthr_user');
+      closeLogoutModal();
+      showToast('ออกจากระบบเรียบร้อย', 'info');
+      updateUIState();
+    }
+
+    async function loadLandingStats() {
+      showLoader('อัปเดตสถิติ...');
+      try {
+        const { data: emp } = await dbClient.from('employees').select('*');
+        const { data: usr } = await dbClient.from('users').select('id');
+
+        hideLoader();
+
+        employeesData = emp || [];
+        const totalEmp = employeesData.length;
+        const totalUsers = usr ? usr.length : 0;
+
+        const depts = [...new Set(employeesData.map(e => e.department))];
+        const avgSalary = totalEmp > 0 
+          ? Math.round(employeesData.reduce((acc, curr) => acc + Number(curr.salary || 0), 0) / totalEmp)
+          : 0;
+
+        document.getElementById('stat-total-emp').innerText = totalEmp;
+        document.getElementById('stat-total-dept').innerText = depts.length;
+        document.getElementById('stat-avg-salary').innerText = `฿${avgSalary.toLocaleString()}`;
+        document.getElementById('stat-total-users').innerText = totalUsers;
+
+        renderCharts(depts, employeesData);
+      } catch (e) {
+        hideLoader();
+      }
+    }
+
+    function renderCharts(depts, employees) {
+      const deptCounts = depts.map(d => employees.filter(e => e.department === d).length);
+      const deptSalaries = depts.map(d => employees.filter(e => e.department === d).reduce((a, c) => a + Number(c.salary || 0), 0));
+
+      const ctxPie = document.getElementById('deptChart').getContext('2d');
+      if (deptChartInstance) deptChartInstance.destroy();
+      deptChartInstance = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: depts,
+          datasets: [{
+            data: deptCounts,
+            backgroundColor: ['#FCE7F3', '#E0F2FE', '#FEF3C7', '#DCFCE7', '#F3E8FF']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      const ctxBar = document.getElementById('salaryChart').getContext('2d');
+      if (salaryChartInstance) salaryChartInstance.destroy();
+      salaryChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: depts,
+          datasets: [{
+            label: 'งบเงินเดือน (บาท)',
+            data: deptSalaries,
+            backgroundColor: '#0284C7'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    async function fetchEmployees() {
+      showLoader('ดึงข้อมูลพนักงาน...');
+      const { data, error } = await dbClient.from('employees').select('*').order('created_at', { ascending: false });
+      hideLoader();
+      if (!error) {
+        employeesData = data || [];
+        renderEmployeeTable();
+      }
+    }
+
+    function renderEmployeeTable() {
+      const query = document.getElementById('emp-search').value.toLowerCase();
+      const tbody = document.getElementById('employee-table-body');
+
+      const filtered = employeesData.filter(e => 
+        e.full_name.toLowerCase().includes(query) ||
+        e.emp_code.toLowerCase().includes(query) ||
+        e.department.toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">ไม่พบข้อมูลพนักงาน</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(e => `
+        <tr class="hover:bg-pink-50/30 transition">
+          <td class="p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center overflow-hidden border border-pink-200 shrink-0">
+              ${e.avatar_url 
+                ? `<img src="${e.avatar_url}" alt="Avatar" class="w-full h-full object-cover" onerror="handleImageError(this)">`
+                : `<span class="text-xs font-bold text-pink-500">${e.full_name.charAt(0)}</span>`}
+            </div>
+            <div>
+              <p class="font-semibold text-slate-800">${e.full_name}</p>
+              <p class="text-[10px] text-slate-400">${e.phone || '-'}</p>
+            </div>
+          </td>
+          <td class="p-4 font-mono text-xs text-slate-600">${e.emp_code}</td>
+          <td class="p-4">
+            <span class="px-2 py-1 bg-sky-50 text-sky-600 rounded-lg text-xs">${e.department}</span>
+            <span class="text-xs text-slate-400 block mt-0.5">${e.position}</span>
+          </td>
+          <td class="p-4 font-medium text-slate-700">฿${Number(e.salary).toLocaleString()}</td>
+          <td class="p-4 text-xs text-slate-500">${e.phone || '-'}</td>
+          <td class="p-4 text-center">
+            ${(currentUser && (currentUser.role === 'admin' || currentUser.role === 'hr')) ? `
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="editEmployee(${e.id})" class="p-1.5 text-sky-600 hover:bg-sky-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+              ${currentUser.role === 'admin' ? `
+              <button onclick="deleteEmployee(${e.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              ` : ''}
+            </div>` : '-'}
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function openEmployeeModal() {
+      document.getElementById('form-employee').reset();
+      document.getElementById('emp-id').value = '';
+      document.getElementById('modal-emp-title').innerText = 'เพิ่มข้อมูลพนักงาน';
+      document.getElementById('modal-employee').classList.remove('hidden');
+    }
+
+    function closeEmployeeModal() {
+      document.getElementById('modal-employee').classList.add('hidden');
+    }
+
+    function editEmployee(id) {
+      const emp = employeesData.find(e => e.id === id);
+      if (!emp) return;
+
+      document.getElementById('emp-id').value = emp.id;
+      document.getElementById('emp-code').value = emp.emp_code;
+      document.getElementById('emp-fullname').value = emp.full_name;
+      document.getElementById('emp-dept').value = emp.department;
+      document.getElementById('emp-pos').value = emp.position;
+      document.getElementById('emp-salary').value = emp.salary;
+      document.getElementById('emp-phone').value = emp.phone;
+
+      document.getElementById('modal-emp-title').innerText = 'แก้ไขข้อมูลพนักงาน';
+      document.getElementById('modal-employee').classList.remove('hidden');
+    }
+
+    async function saveEmployee(e) {
+      e.preventDefault();
+      showLoader('กำลังบันทึกข้อมูล...');
+
+      const id = document.getElementById('emp-id').value;
+      const fileInput = document.getElementById('emp-avatar-file');
+      let avatarUrl = null;
+
+      if (fileInput.files.length > 0) {
+        avatarUrl = await uploadCompressedImage(fileInput.files[0]);
+      }
+
+      const payload = {
+        emp_code: document.getElementById('emp-code').value.trim(),
+        full_name: document.getElementById('emp-fullname').value.trim(),
+        department: document.getElementById('emp-dept').value.trim(),
+        position: document.getElementById('emp-pos').value.trim(),
+        salary: parseFloat(document.getElementById('emp-salary').value),
+        phone: document.getElementById('emp-phone').value.trim()
+      };
+
+      if (avatarUrl) payload.avatar_url = avatarUrl;
+
+      let res;
+      if (id) {
+        res = await dbClient.from('employees').update(payload).eq('id', id);
+      } else {
+        res = await dbClient.from('employees').insert([payload]);
+      }
+
+      hideLoader();
+      if (res.error) {
+        showToast('เกิดข้อผิดพลาดในการบันทึก: ' + res.error.message, 'error');
+      } else {
+        showToast('บันทึกข้อมูลพนักงานเรียบร้อย', 'success');
+        closeEmployeeModal();
+        fetchEmployees();
+      }
+    }
+
+    async function deleteEmployee(id) {
+      if (!confirm('คุณต้องการลบข้อมูลพนักงานคนนี้ใช่หรือไม่?')) return;
+      showLoader('กำลังลบข้อมูล...');
+      const { error } = await dbClient.from('employees').delete().eq('id', id);
+      hideLoader();
+      if (!error) {
+        showToast('ลบข้อมูลพนักงานเรียบร้อย', 'success');
+        fetchEmployees();
+      } else {
+        showToast('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+      }
+    }
+
+    async function uploadCompressedImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = async () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300;
+            const scaleFactor = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleFactor;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(async (blob) => {
+              const fileName = `avatar_${Date.now()}.jpg`;
+              const { data, error } = await dbClient.storage
+                .from('avatars')
+                .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+              if (error) {
+                showToast('อัปโหลดรูปภาพไม่สำเร็จ', 'error');
+                resolve(null);
+              } else {
+                const { data: publicUrlData } = dbClient.storage.from('avatars').getPublicUrl(fileName);
+                resolve(publicUrlData.publicUrl);
+              }
+            }, 'image/jpeg', 0.7);
+          };
+        };
+      });
+    }
+
+    function handleImageError(imgElement) {
+      imgElement.classList.add('hidden');
+      if (imgElement.nextElementSibling) {
+        imgElement.nextElementSibling.classList.remove('hidden');
+      }
+    }
+
+    async function fetchUsers() {
+      showLoader('ดึงข้อมูลผู้ใช้งาน...');
+      const { data, error } = await dbClient.from('users').select('*').order('id', { ascending: true });
+      hideLoader();
+      if (!error) {
+        usersData = data || [];
+        renderUserTable();
+      }
+    }
+
+    function renderUserTable() {
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = usersData.map(u => `
+        <tr class="hover:bg-sky-50/30 transition">
+          <td class="p-4 font-semibold text-slate-800">${u.full_name}</td>
+          <td class="p-4 text-slate-600 font-mono text-xs">${u.username}</td>
+          <td class="p-4">
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${
+              u.role === 'admin' ? 'bg-purple-100 text-purple-600' :
+              u.role === 'hr' ? 'bg-pink-100 text-pink-600' : 'bg-slate-100 text-slate-600'
+            }">${u.role}</span>
+          </td>
+          <td class="p-4 text-center">
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="editUser(${u.id})" class="p-1.5 text-sky-600 hover:bg-sky-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+              <button onclick="deleteUser(${u.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function openUserModal() {
+      document.getElementById('form-user').reset();
+      document.getElementById('user-id').value = '';
+      document.getElementById('modal-user-title').innerText = 'เพิ่มผู้ใช้งานระบบ';
+      document.getElementById('modal-user').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('modal-user').classList.add('hidden');
+    }
+
+    function editUser(id) {
+      const usr = usersData.find(u => u.id === id);
+      if (!usr) return;
+
+      document.getElementById('user-id').value = usr.id;
+      document.getElementById('user-fullname').value = usr.full_name;
+      document.getElementById('user-username').value = usr.username;
+      document.getElementById('user-password').value = usr.password;
+      document.getElementById('user-role').value = usr.role;
+
+      document.getElementById('modal-user-title').innerText = 'แก้ไขผู้ใช้งานระบบ';
+      document.getElementById('modal-user').classList.remove('hidden');
+    }
+
+    async function saveUser(e) {
+      e.preventDefault();
+      showLoader('บันทึกผู้ใช้...');
+      const id = document.getElementById('user-id').value;
+      const payload = {
+        full_name: document.getElementById('user-fullname').value.trim(),
+        username: document.getElementById('user-username').value.trim(),
+        password: document.getElementById('user-password').value.trim(),
+        role: document.getElementById('user-role').value,
+        user_code: `USR_${Date.now()}`
+      };
+
+      let res;
+      if (id) {
+        res = await dbClient.from('users').update(payload).eq('id', id);
+      } else {
+        res = await dbClient.from('users').insert([payload]);
+      }
+
+      hideLoader();
+      if (!res.error) {
+        showToast('บันทึกผู้ใช้เรียบร้อย', 'success');
+        closeUserModal();
+        fetchUsers();
+      } else {
+        showToast('เกิดข้อผิดพลาด: ' + res.error.message, 'error');
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('ยืนยันลบผู้ใช้งานระบบรายนี้?')) return;
+      showLoader('กำลังลบผู้ใช้...');
+      const { error } = await dbClient.from('users').delete().eq('id', id);
+      hideLoader();
+      if (!error) {
+        showToast('ลบผู้ใช้เรียบร้อย', 'success');
+        fetchUsers();
+      }
+    }
+
+    async function loadEmployeeProfile() {
+      if (!currentUser) return;
+      showLoader('โหลดข้อมูลโปรไฟล์...');
+      const { data } = await dbClient.from('employees').select('*').eq('emp_code', currentUser.user_code).single();
+      hideLoader();
+
+      document.getElementById('profile-name').innerText = currentUser.full_name;
+      document.getElementById('profile-role').innerText = currentUser.role;
+
+      if (data) {
+        document.getElementById('profile-code').innerText = data.emp_code;
+        document.getElementById('profile-dept-pos').innerText = `${data.department} / ${data.position}`;
+        document.getElementById('profile-salary').innerText = `฿${Number(data.salary).toLocaleString()}`;
+        document.getElementById('profile-phone').innerText = data.phone || '-';
+
+        if (data.avatar_url) {
+          const img = document.getElementById('profile-avatar-img');
+          img.src = data.avatar_url;
+          img.classList.remove('hidden');
+          document.getElementById('profile-avatar-text').classList.add('hidden');
+        }
+      }
+    }
+
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleAdminPanel(show) {
+      const modal = document.getElementById('admin-panel-modal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function exportEmployeeReport() {
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "รหัสพนักงาน,ชื่อ-นามสกุล,แผนก,ตำแหน่ง,เงินเดือน,เบอร์โทร\n";
+
+      employeesData.forEach(e => {
+        csvContent += `"${e.emp_code}","${e.full_name}","${e.department}","${e.position}","${e.salary}","${e.phone}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `รายงานพนักงาน_SmartHR_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('ดาวน์โหลดรายงานเรียบร้อย', 'success');
+    }
+
+    function showLoader(text = 'กำลังโหลด...') {
+      document.getElementById('loader-text').innerText = text;
+      document.getElementById('loader').classList.remove('hidden');
+    }
+
+    function hideLoader() {
+      document.getElementById('loader').classList.add('hidden');
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = message;
+      if (type === 'error') toastIcon.setAttribute('data-lucide', 'alert-circle');
+      else if (type === 'success') toastIcon.setAttribute('data-lucide', 'check-circle-2');
+      else toastIcon.setAttribute('data-lucide', 'info');
+
+      lucide.createIcons();
+
+      toast.classList.remove('-translate-y-full', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('-translate-y-full', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
