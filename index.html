@@ -37,7 +37,7 @@
     </div>
 
     <!-- MAIN CONTAINER -->
-    <div id="app" class="flex-1 flex flex-col md:flex-row min-h-screen">
+    <div id="app" class="flex-1 flex flex-col min-h-screen">
         <!-- Will be rendered dynamically via JS -->
     </div>
 
@@ -72,7 +72,7 @@
 
     <!-- MAIN APP SCRIPT -->
     <script>
-        // Initialize Supabase Client with non-colliding variable name
+        // Initialize Supabase Client
         const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // App State
@@ -80,6 +80,7 @@
         let currentTab = localStorage.getItem('smarthr_tab') || (currentUser ? 'dashboard' : 'landing');
         let employeesData = [];
         let usersData = [];
+        let myProfileData = null;
         let salaryChartInstance = null;
         let deptChartInstance = null;
 
@@ -113,16 +114,17 @@
                     app.innerHTML = renderLandingView();
                 }
             } else {
-                // Logged in layout
+                // Logged in layout (Sidebar + Main Content)
+                app.className = "flex-1 flex flex-col md:flex-row min-h-screen";
                 app.innerHTML = `
                     <!-- Desktop Sidebar / Mobile Bottom Nav -->
                     ${renderSidebar()}
                     ${renderMobileBottomNav()}
 
                     <!-- Main Content Area -->
-                    <main class="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+                    <main class="flex-1 p-4 md:p-6 pb-24 md:pb-6 overflow-y-auto">
                         ${renderHeaderBar()}
-                        <div id="tab-content" class="mt-6">
+                        <div id="tab-content" class="mt-4">
                             ${renderTabContent()}
                         </div>
                     </main>
@@ -135,7 +137,7 @@
         // --- LANDING PAGE ---
         function renderLandingView() {
             return `
-                <div class="min-h-screen flex flex-col justify-between p-6 md:p-12">
+                <div class="min-h-screen flex flex-col justify-between p-6 md:p-12 w-full">
                     <header class="flex justify-between items-center max-w-6xl mx-auto w-full">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-pink-400 rounded-2xl flex items-center justify-center text-white soft-shadow">
@@ -170,40 +172,40 @@
             `;
         }
 
-        // --- LOGIN VIEW ---
+        // --- LOGIN VIEW (Fixed Center Alignment) ---
         function renderLoginView() {
             return `
-                <div class="min-h-screen flex items-center justify-center p-4">
-                    <div class="bg-white/9ga backdrop-blur-md rounded-3xl p-8 max-w-md w-full soft-shadow border border-pink-100">
+                <div class="min-h-screen w-full flex items-center justify-center p-4">
+                    <div class="bg-white/90 backdrop-blur-md rounded-3xl p-6 md:p-8 max-w-md w-full soft-shadow border border-pink-100 my-auto">
                         <div class="text-center mb-6">
-                            <div class="w-14 h-14 bg-pink-100 text-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 soft-shadow">
-                                <i data-lucide="lock" class="w-7 h-7"></i>
+                            <div class="w-12 h-12 bg-pink-100 text-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 soft-shadow">
+                                <i data-lucide="lock" class="w-6 h-6"></i>
                             </div>
-                            <h2 class="text-2xl font-bold text-slate-800">เข้าสู่ระบบ SmartHR</h2>
-                            <p class="text-sm text-slate-500 mt-1">กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน</p>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800">เข้าสู่ระบบ SmartHR</h2>
+                            <p class="text-xs md:text-sm text-slate-500 mt-1">กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน</p>
                         </div>
 
                         <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อผู้ใช้ (Username)</label>
+                                <label class="block text-xs md:text-sm font-medium text-slate-600 mb-1">ชื่อผู้ใช้ (Username)</label>
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="user" class="w-5 h-5"></i></span>
-                                    <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="เช่น admin, hr, employee1">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5"></i></span>
+                                    <input type="text" id="login-username" required class="w-full pl-9 md:pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="เช่น admin, hr, employee1">
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">รหัสผ่าน (Password)</label>
+                                <label class="block text-xs md:text-sm font-medium text-slate-600 mb-1">รหัสผ่าน (Password)</label>
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="key" class="w-5 h-5"></i></span>
-                                    <input type="password" id="login-password" required class="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="••••••••">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="key" class="w-4 h-4 md:w-5 md:h-5"></i></span>
+                                    <input type="password" id="login-password" required class="w-full pl-9 md:pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="••••••••">
                                     <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                                        <i id="eye-icon" data-lucide="eye" class="w-5 h-5"></i>
+                                        <i id="eye-icon" data-lucide="eye" class="w-4 h-4 md:w-5 md:h-5"></i>
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center justify-between text-xs md:text-sm">
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" id="remember-me" class="rounded text-pink-500 focus:ring-pink-400 w-4 h-4">
                                     <span class="text-slate-600">จำรหัสผ่าน</span>
@@ -211,7 +213,7 @@
                                 <button type="button" onclick="switchTab('landing')" class="text-pink-500 hover:underline">กลับหน้าแรก</button>
                             </div>
 
-                            <button type="submit" class="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl soft-shadow transition">
+                            <button type="submit" class="w-full py-2.5 md:py-3 bg-pink-500 hover:bg-pink-600 text-white font-semibold rounded-xl soft-shadow transition text-sm">
                                 เข้าสู่ระบบ
                             </button>
                         </form>
@@ -255,8 +257,8 @@
 
                 currentUser = data;
                 localStorage.setItem('smarthr_user', JSON.stringify(currentUser));
-                currentTab = 'dashboard';
-                localStorage.setItem('smarthr_tab', 'dashboard');
+                currentTab = currentUser.role === 'employee' ? 'my-profile' : 'dashboard';
+                localStorage.setItem('smarthr_tab', currentTab);
                 renderApp();
             } catch (err) {
                 console.error(err);
@@ -271,46 +273,46 @@
             if (!currentUser) return '';
             const role = currentUser.role;
             return `
-                <aside class="hidden md:flex flex-col w-64 bg-white/80 backdrop-blur-md border-r border-pink-100 p-6 sticky top-0 h-screen">
-                    <div class="flex items-center space-x-3 mb-8">
-                        <div class="w-10 h-10 bg-pink-400 rounded-2xl flex items-center justify-center text-white soft-shadow">
-                            <i data-lucide="users" class="w-6 h-6"></i>
+                <aside class="hidden md:flex flex-col w-60 bg-white/80 backdrop-blur-md border-r border-pink-100 p-5 sticky top-0 h-screen">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-9 h-9 bg-pink-400 rounded-xl flex items-center justify-center text-white soft-shadow">
+                            <i data-lucide="users" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <h1 class="font-bold text-slate-800 leading-tight">Smart<span class="text-pink-500">HR</span></h1>
-                            <span class="text-xs text-slate-400 uppercase tracking-wider">${currentUser.role} Role</span>
+                            <h1 class="font-bold text-slate-800 leading-tight text-base">Smart<span class="text-pink-500">HR</span></h1>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider">${currentUser.role} Role</span>
                         </div>
                     </div>
 
-                    <nav class="space-y-2 flex-1">
+                    <nav class="space-y-1.5 flex-1">
                         ${role !== 'employee' ? `
-                            <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition ${currentTab === 'dashboard' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
-                                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> แดชบอร์ดภาพรวม
+                            <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition ${currentTab === 'dashboard' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> แดชบอร์ดภาพรวม
                             </button>
                         ` : ''}
                         
                         ${role !== 'employee' ? `
-                            <button onclick="switchTab('employees')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition ${currentTab === 'employees' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
-                                <i data-lucide="users" class="w-5 h-5"></i> จัดการพนักงาน
+                            <button onclick="switchTab('employees')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition ${currentTab === 'employees' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
+                                <i data-lucide="users" class="w-4 h-4"></i> จัดการพนักงาน
                             </button>
                         ` : ''}
 
                         ${role === 'admin' ? `
-                            <button onclick="switchTab('users')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition ${currentTab === 'users' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
-                                <i data-lucide="user-cog" class="w-5 h-5"></i> จัดการผู้ใช้งาน
+                            <button onclick="switchTab('users')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition ${currentTab === 'users' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
+                                <i data-lucide="user-cog" class="w-4 h-4"></i> จัดการผู้ใช้งาน
                             </button>
                         ` : ''}
 
                         ${role === 'employee' ? `
-                            <button onclick="switchTab('my-profile')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition ${currentTab === 'my-profile' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
-                                <i data-lucide="user" class="w-5 h-5"></i> ข้อมูลของฉัน
+                            <button onclick="switchTab('my-profile')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition ${currentTab === 'my-profile' ? 'bg-pink-500 text-white soft-shadow' : 'text-slate-600 hover:bg-pink-50'}">
+                                <i data-lucide="user" class="w-4 h-4"></i> ข้อมูลของฉัน
                             </button>
                         ` : ''}
                     </nav>
 
-                    <div class="pt-4 border-t border-slate-100">
-                        <button onclick="openLogoutModal()" class="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-medium transition">
-                            <i data-lucide="log-out" class="w-5 h-5"></i> ออกจากระบบ
+                    <div class="pt-3 border-t border-slate-100">
+                        <button onclick="openLogoutModal()" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-red-500 hover:bg-red-50 rounded-xl font-medium text-sm transition">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> ออกจากระบบ
                         </button>
                     </div>
                 </aside>
@@ -323,7 +325,7 @@
             const isAdmin = role === 'admin';
 
             return `
-                <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-100 px-4 py-3 flex justify-around items-center z-35">
+                <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-100 px-4 py-2.5 flex justify-around items-center z-35">
                     ${role !== 'employee' ? `
                         <button onclick="switchTab('dashboard')" class="flex flex-col items-center ${currentTab === 'dashboard' ? 'text-pink-500' : 'text-slate-400'}">
                             <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
@@ -336,8 +338,8 @@
                     ` : ''}
 
                     ${isAdmin ? `
-                        <button onclick="toggleAdminPanel()" class="w-12 h-12 bg-pink-500 text-white rounded-full flex items-center justify-center soft-shadow -mt-6 border-4 border-white">
-                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        <button onclick="toggleAdminPanel()" class="w-11 h-11 bg-pink-500 text-white rounded-full flex items-center justify-center soft-shadow -mt-5 border-4 border-white">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
                         </button>
                     ` : ''}
 
@@ -369,13 +371,13 @@
 
         function renderHeaderBar() {
             return `
-                <header class="flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-2xl soft-shadow border border-pink-100">
+                <header class="flex justify-between items-center bg-white/80 backdrop-blur-md p-3.5 md:p-4 rounded-2xl soft-shadow border border-pink-100">
                     <div>
-                        <h2 class="text-lg md:text-xl font-bold text-slate-800">ยินดีต้อนรับ, ${currentUser.full_name}</h2>
-                        <p class="text-xs text-slate-500">สถานะสิทธิ์: <span class="font-semibold uppercase text-pink-500">${currentUser.role}</span></p>
+                        <h2 class="text-base md:text-lg font-bold text-slate-800">ยินดีต้อนรับ, ${currentUser.full_name}</h2>
+                        <p class="text-[11px] text-slate-500">สถานะสิทธิ์: <span class="font-semibold uppercase text-pink-500">${currentUser.role}</span></p>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center font-bold">
+                        <div class="w-9 h-9 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center font-bold text-sm">
                             ${currentUser.full_name.charAt(0)}
                         </div>
                     </div>
@@ -411,7 +413,7 @@
             return renderDashboardView();
         }
 
-        // --- 1. DASHBOARD VIEW ---
+        // --- 1. DASHBOARD VIEW (Compacted & Resized) ---
         async function fetchDashboardData() {
             showLoader(true);
             try {
@@ -430,52 +432,52 @@
         function renderDashboardView() {
             setTimeout(fetchDashboardData, 50);
             return `
-                <div class="space-y-6">
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white/90 p-6 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-4">
-                            <div class="w-14 h-14 bg-blue-100 text-blue-500 rounded-2xl flex items-center justify-center">
-                                <i data-lucide="users" class="w-7 h-7"></i>
+                <div class="space-y-4">
+                    <!-- Stats Cards (Compact Size) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                                <i data-lucide="users" class="w-5 h-5"></i>
                             </div>
-                            <div>
-                                <p class="text-sm text-slate-500 font-medium">พนักงานทั้งหมด</p>
-                                <h3 id="stat-total-emp" class="text-2xl font-bold text-slate-800">0 คน</h3>
-                            </div>
-                        </div>
-
-                        <div class="bg-white/90 p-6 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-4">
-                            <div class="w-14 h-14 bg-pink-100 text-pink-500 rounded-2xl flex items-center justify-center">
-                                <i data-lucide="wallet" class="w-7 h-7"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm text-slate-500 font-medium">งบประมาณเงินเดือนรวม</p>
-                                <h3 id="stat-total-salary" class="text-2xl font-bold text-slate-800">0 บาท</h3>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500 font-medium truncate">พนักงานทั้งหมด</p>
+                                <h3 id="stat-total-emp" class="text-base font-bold text-slate-800 truncate">0 คน</h3>
                             </div>
                         </div>
 
-                        <div class="bg-white/90 p-6 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-4">
-                            <div class="w-14 h-14 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center">
-                                <i data-lucide="trending-up" class="w-7 h-7"></i>
+                        <div class="bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center shrink-0">
+                                <i data-lucide="wallet" class="w-5 h-5"></i>
                             </div>
-                            <div>
-                                <p class="text-sm text-slate-500 font-medium">เงินเดือนเฉลี่ย</p>
-                                <h3 id="stat-avg-salary" class="text-2xl font-bold text-slate-800">0 บาท</h3>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500 font-medium truncate">งบประมาณเงินเดือนรวม</p>
+                                <h3 id="stat-total-salary" class="text-base font-bold text-slate-800 truncate">0 บาท</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100 flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-amber-100 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500 font-medium truncate">เงินเดือนเฉลี่ย</p>
+                                <h3 id="stat-avg-salary" class="text-base font-bold text-slate-800 truncate">0 บาท</h3>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Charts Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white/90 p-6 rounded-2xl soft-shadow border border-pink-100">
-                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-5 h-5 text-pink-500"></i> สัดส่วนพนักงานตามแผนก</h3>
-                            <div class="relative h-64 flex items-center justify-center">
+                    <!-- Charts Grid (Responsive Height) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-pink-500"></i> สัดส่วนพนักงานตามแผนก</h3>
+                            <div class="relative h-52 flex items-center justify-center">
                                 <canvas id="deptChart"></canvas>
                             </div>
                         </div>
 
-                        <div class="bg-white/90 p-6 rounded-2xl soft-shadow border border-pink-100">
-                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="bar-chart" class="w-5 h-5 text-pink-500"></i> สรุปเงินเดือนตามแผนก</h3>
-                            <div class="relative h-64 flex items-center justify-center">
+                        <div class="bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3 flex items-center gap-2"><i data-lucide="bar-chart" class="w-4 h-4 text-pink-500"></i> สรุปเงินเดือนตามแผนก</h3>
+                            <div class="relative h-52 flex items-center justify-center">
                                 <canvas id="salaryChart"></canvas>
                             </div>
                         </div>
@@ -516,7 +518,7 @@
                         labels: labels,
                         datasets: [{ data: countData, backgroundColor: ['#f472b6', '#60a5fa', '#fbbf24', '#34d399', '#a78bfa'] }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } }
                 });
             }
 
@@ -528,14 +530,14 @@
                     type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: [{ label: 'ยอดเงินเดือนรวม (บาท)', data: salaryData, backgroundColor: '#f472b6', borderRadius: 8 }]
+                        datasets: [{ label: 'ยอดเงินเดือนรวม (บาท)', data: salaryData, backgroundColor: '#f472b6', borderRadius: 6 }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } } } }
                 });
             }
         }
 
-        // --- 2. EMPLOYEES MANAGEMENT (CRUD) ---
+        // --- 2. EMPLOYEES MANAGEMENT (CRUD with Single-line No-wrap Table) ---
         async function fetchEmployees() {
             showLoader(true);
             try {
@@ -554,18 +556,18 @@
         function renderEmployeesView() {
             setTimeout(fetchEmployees, 50);
             return `
-                <div class="space-y-6">
-                    <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100">
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-white/90 p-3.5 rounded-2xl soft-shadow border border-pink-100">
                         <div class="relative flex-1">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="search" class="w-5 h-5"></i></span>
-                            <input type="text" id="search-emp" oninput="filterEmployees()" placeholder="ค้นหาชื่อ, รหัส, หรือตำแหน่ง..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></span>
+                            <input type="text" id="search-emp" oninput="filterEmployees()" placeholder="ค้นหาชื่อ, รหัส, หรือตำแหน่ง..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openEmployeeModal()" class="px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-xl soft-shadow transition flex items-center gap-2 justify-center">
-                                <i data-lucide="plus" class="w-5 h-5"></i> เพิ่มพนักงาน
+                            <button onclick="openEmployeeModal()" class="px-3.5 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs md:text-sm font-medium rounded-xl soft-shadow transition flex items-center gap-1.5 justify-center">
+                                <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มพนักงาน
                             </button>
-                            <button onclick="exportCSVReport()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl soft-shadow transition flex items-center gap-2 justify-center">
-                                <i data-lucide="download" class="w-5 h-5"></i> ส่งออก CSV
+                            <button onclick="exportCSVReport()" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs md:text-sm font-medium rounded-xl soft-shadow transition flex items-center gap-1.5 justify-center">
+                                <i data-lucide="download" class="w-4 h-4"></i> ส่งออก CSV
                             </button>
                         </div>
                     </div>
@@ -574,16 +576,16 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-pink-50/50 text-slate-600 text-xs uppercase tracking-wider border-b border-pink-100">
-                                        <th class="p-4">พนักงาน</th>
-                                        <th class="p-4">รหัสพนักงาน</th>
-                                        <th class="p-4">แผนก/ตำแหน่ง</th>
-                                        <th class="p-4">เงินเดือน</th>
-                                        <th class="p-4">เบอร์โทร</th>
-                                        <th class="p-4 text-center">จัดการ</th>
+                                    <tr class="bg-pink-50/50 text-slate-600 text-xs uppercase tracking-wider border-b border-pink-100 whitespace-nowrap">
+                                        <th class="p-3.5">พนักงาน</th>
+                                        <th class="p-3.5">รหัสพนักงาน</th>
+                                        <th class="p-3.5">แผนก/ตำแหน่ง</th>
+                                        <th class="p-3.5">เงินเดือน</th>
+                                        <th class="p-3.5">เบอร์โทร</th>
+                                        <th class="p-3.5 text-center">จัดการ</th>
                                     </tr>
                                 </thead>
-                                <tbody id="employees-tbody" class="divide-y divide-slate-100 text-sm">
+                                <tbody id="employees-tbody" class="divide-y divide-slate-100 text-xs md:text-sm">
                                     <!-- Dynamic Rows -->
                                 </tbody>
                             </table>
@@ -595,39 +597,39 @@
                 <div id="employee-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
                     <div class="bg-white rounded-3xl p-6 max-w-lg w-full soft-shadow border border-pink-100 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-                            <h3 id="modal-title" class="text-lg font-bold text-slate-800">เพิ่มข้อมูลพนักงาน</h3>
+                            <h3 id="modal-title" class="text-base font-bold text-slate-800">เพิ่มข้อมูลพนักงาน</h3>
                             <button onclick="closeEmployeeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
-                        <form id="employee-form" onsubmit="saveEmployee(event)" class="space-y-4">
+                        <form id="employee-form" onsubmit="saveEmployee(event)" class="space-y-3.5">
                             <input type="hidden" id="emp-db-id">
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">รหัสพนักงาน</label>
-                                <input type="text" id="emp-id" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="เช่น EMP004">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">รหัสพนักงาน</label>
+                                <input type="text" id="emp-id" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="เช่น EMP004">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อ-สกุล</label>
-                                <input type="text" id="emp-name" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="ระบุชื่อ-นามสกุล">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อ-สกุล</label>
+                                <input type="text" id="emp-name" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="ระบุชื่อ-นามสกุล">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">แผนก / ตำแหน่ง</label>
-                                <input type="text" id="emp-dept" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="เช่น Software Engineer">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">แผนก / ตำแหน่ง</label>
+                                <input type="text" id="emp-dept" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="เช่น Software Engineer">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">เงินเดือน (บาท)</label>
-                                <input type="number" id="emp-salary" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="45000">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">เงินเดือน (บาท)</label>
+                                <input type="number" id="emp-salary" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="45000">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">เบอร์โทรศัพท์</label>
-                                <input type="text" id="emp-phone" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="0812345678">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">เบอร์โทรศัพท์</label>
+                                <input type="text" id="emp-phone" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="0812345678">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">รูปภาพโปรไฟล์</label>
-                                <input type="file" id="emp-image-file" accept="image/*" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">รูปภาพโปรไฟล์</label>
+                                <input type="file" id="emp-image-file" accept="image/*" class="w-full px-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
                                 <input type="hidden" id="emp-image-url">
                             </div>
-                            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
-                                <button type="button" onclick="closeEmployeeModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition">ยกเลิก</button>
-                                <button type="submit" class="px-5 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition shadow-md shadow-pink-200">บันทึก</button>
+                            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                                <button type="button" onclick="closeEmployeeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs md:text-sm rounded-xl font-medium transition">ยกเลิก</button>
+                                <button type="submit" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs md:text-sm rounded-xl font-medium transition shadow-md shadow-pink-200">บันทึก</button>
                             </div>
                         </form>
                     </div>
@@ -639,27 +641,24 @@
             const tbody = document.getElementById('employees-tbody');
             if (!tbody) return;
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">ไม่พบข้อมูลพนักงาน</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">ไม่พบข้อมูลพนักงาน</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = data.map(emp => `
-                <tr class="hover:bg-pink-50/30 transition">
-                    <td class="p-4 flex items-center space-x-3">
-                        <img src="${emp.image_url || 'https://via.placeholder.com/150?text=No+Image'}" onerror="this.src='https://via.placeholder.com/150?text=Error'" class="w-10 h-10 rounded-full object-cover border border-pink-200" alt="Avatar">
-                        <div>
-                            <p class="font-semibold text-slate-800">${emp.full_name}</p>
-                            <p class="text-xs text-slate-400">บันทึกเมื่อ: ${new Date(emp.created_at).toLocaleDateString('th-TH')}</p>
-                        </div>
+                <tr class="hover:bg-pink-50/30 transition whitespace-nowrap">
+                    <td class="p-3.5 flex items-center space-x-3 whitespace-nowrap">
+                        <img src="${emp.image_url || 'https://via.placeholder.com/150?text=No+Image'}" onerror="this.src='https://via.placeholder.com/150?text=Error'" class="w-8 h-8 rounded-full object-cover border border-pink-200 shrink-0" alt="Avatar">
+                        <span class="font-semibold text-slate-800">${emp.full_name}</span>
                     </td>
-                    <td class="p-4 font-mono text-xs font-semibold text-pink-600">${emp.employee_id}</td>
-                    <td class="p-4">${emp.department_position}</td>
-                    <td class="p-4 font-semibold text-slate-800">${Number(emp.salary).toLocaleString()} ฿</td>
-                    <td class="p-4">${emp.phone || '-'}</td>
-                    <td class="p-4 text-center">
-                        <div class="flex items-center justify-center space-x-2">
-                            <button onclick="editEmployee('${emp.id}')" class="p-2 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="deleteEmployee('${emp.id}')" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <td class="p-3.5 font-mono text-xs font-semibold text-pink-600 whitespace-nowrap">${emp.employee_id}</td>
+                    <td class="p-3.5 whitespace-nowrap">${emp.department_position}</td>
+                    <td class="p-3.5 font-semibold text-slate-800 whitespace-nowrap">${Number(emp.salary).toLocaleString()} ฿</td>
+                    <td class="p-3.5 whitespace-nowrap">${emp.phone || '-'}</td>
+                    <td class="p-3.5 text-center whitespace-nowrap">
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="editEmployee('${emp.id}')" class="p-1.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-lg transition"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteEmployee('${emp.id}')" class="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -826,7 +825,7 @@
             a.click();
         }
 
-        // --- 3. USERS MANAGEMENT (Admin Only) ---
+        // --- 3. USERS MANAGEMENT (Admin Only with Single-line No-wrap Table) ---
         async function fetchUsers() {
             showLoader(true);
             try {
@@ -845,11 +844,11 @@
         function renderUsersView() {
             setTimeout(fetchUsers, 50);
             return `
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center bg-white/90 p-4 rounded-2xl soft-shadow border border-pink-100">
-                        <h3 class="font-bold text-slate-800">จัดการสิทธิ์ผู้ใช้งานระบบ (Admin Only)</h3>
-                        <button onclick="openUserModal()" class="px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-xl soft-shadow transition flex items-center gap-2">
-                            <i data-lucide="user-plus" class="w-5 h-5"></i> เพิ่มผู้ใช้
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-white/90 p-3.5 rounded-2xl soft-shadow border border-pink-100">
+                        <h3 class="font-bold text-sm text-slate-800">จัดการสิทธิ์ผู้ใช้งานระบบ (Admin Only)</h3>
+                        <button onclick="openUserModal()" class="px-3.5 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs md:text-sm font-medium rounded-xl soft-shadow transition flex items-center gap-1.5">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ใช้
                         </button>
                     </div>
 
@@ -857,14 +856,14 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-pink-50/50 text-slate-600 text-xs uppercase tracking-wider border-b border-pink-100">
-                                        <th class="p-4">ชื่อ-สกุล</th>
-                                        <th class="p-4">ชื่อผู้ใช้ (Username)</th>
-                                        <th class="p-4">สิทธิ์ (Role)</th>
-                                        <th class="p-4 text-center">จัดการ</th>
+                                    <tr class="bg-pink-50/50 text-slate-600 text-xs uppercase tracking-wider border-b border-pink-100 whitespace-nowrap">
+                                        <th class="p-3.5">ชื่อ-สกุล</th>
+                                        <th class="p-3.5">ชื่อผู้ใช้ (Username)</th>
+                                        <th class="p-3.5">สิทธิ์ (Role)</th>
+                                        <th class="p-3.5 text-center">จัดการ</th>
                                     </tr>
                                 </thead>
-                                <tbody id="users-tbody" class="divide-y divide-slate-100 text-sm">
+                                <tbody id="users-tbody" class="divide-y divide-slate-100 text-xs md:text-sm">
                                     <!-- Dynamic Rows -->
                                 </tbody>
                             </table>
@@ -876,34 +875,34 @@
                 <div id="user-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
                     <div class="bg-white rounded-3xl p-6 max-w-md w-full soft-shadow border border-pink-100">
                         <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-                            <h3 id="user-modal-title" class="text-lg font-bold text-slate-800">เพิ่มผู้ใช้งานระบบ</h3>
+                            <h3 id="user-modal-title" class="text-base font-bold text-slate-800">เพิ่มผู้ใช้งานระบบ</h3>
                             <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
-                        <form id="user-form" onsubmit="saveUser(event)" class="space-y-4">
+                        <form id="user-form" onsubmit="saveUser(event)" class="space-y-3.5">
                             <input type="hidden" id="user-db-id">
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อ-สกุล</label>
-                                <input type="text" id="user-fullname" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="ระบุชื่อ-นามสกุล">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อ-สกุล</label>
+                                <input type="text" id="user-fullname" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="ระบุชื่อ-นามสกุล">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อผู้ใช้ (Username)</label>
-                                <input type="text" id="user-username" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="username">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อผู้ใช้ (Username)</label>
+                                <input type="text" id="user-username" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="username">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">รหัสผ่าน (Password)</label>
-                                <input type="text" id="user-password" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="password">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">รหัสผ่าน (Password)</label>
+                                <input type="text" id="user-password" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" placeholder="password">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">สิทธิ์การใช้งาน (Role)</label>
-                                <select id="user-role" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">สิทธิ์การใช้งาน (Role)</label>
+                                <select id="user-role" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
                                     <option value="employee">Employee</option>
                                     <option value="hr">HR</option>
                                     <option value="admin">Admin</option>
                                 </select>
                             </div>
-                            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
-                                <button type="button" onclick="closeUserModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition">ยกเลิก</button>
-                                <button type="submit" class="px-5 py-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition shadow-md shadow-pink-200">บันทึก</button>
+                            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                                <button type="button" onclick="closeUserModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs md:text-sm rounded-xl font-medium transition">ยกเลิก</button>
+                                <button type="submit" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs md:text-sm rounded-xl font-medium transition shadow-md shadow-pink-200">บันทึก</button>
                             </div>
                         </form>
                     </div>
@@ -915,14 +914,14 @@
             const tbody = document.getElementById('users-tbody');
             if (!tbody) return;
             tbody.innerHTML = data.map(u => `
-                <tr class="hover:bg-pink-50/30 transition">
-                    <td class="p-4 font-semibold text-slate-800">${u.full_name}</td>
-                    <td class="p-4 font-mono text-xs text-pink-600">${u.username}</td>
-                    <td class="p-4"><span class="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-xs font-semibold uppercase">${u.role}</span></td>
-                    <td class="p-4 text-center">
-                        <div class="flex items-center justify-center space-x-2">
-                            <button onclick="editUser('${u.id}')" class="p-2 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-xl transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="deleteUser('${u.id}')" class="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <tr class="hover:bg-pink-50/30 transition whitespace-nowrap">
+                    <td class="p-3.5 font-semibold text-slate-800 whitespace-nowrap">${u.full_name}</td>
+                    <td class="p-3.5 font-mono text-xs text-pink-600 whitespace-nowrap">${u.username}</td>
+                    <td class="p-3.5 whitespace-nowrap"><span class="px-2.5 py-0.5 bg-pink-100 text-pink-600 rounded-full text-[10px] font-semibold uppercase">${u.role}</span></td>
+                    <td class="p-3.5 text-center whitespace-nowrap">
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="editUser('${u.id}')" class="p-1.5 bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-lg transition"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteUser('${u.id}')" class="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -997,56 +996,80 @@
         }
 
         // --- 4. MY PROFILE VIEW (Employee Role) ---
-        async function renderMyProfileView() {
+        async function fetchMyProfile() {
             showLoader(true);
-            let myRecord = null;
             try {
-                // Find employee record matching currentUser full_name or username
                 const { data, error } = await dbClient
                     .from('employees')
                     .select('*')
                     .ilike('full_name', `%${currentUser.full_name}%`)
                     .limit(1);
 
-                if (data && data.length > 0) myRecord = data[0];
+                if (data && data.length > 0) {
+                    myProfileData = data[0];
+                } else {
+                    myProfileData = null;
+                }
+                updateMyProfileUI();
             } catch (err) {
                 console.error(err);
             } finally {
                 showLoader(false);
             }
+        }
 
+        function renderMyProfileView() {
+            setTimeout(fetchMyProfile, 50);
             return `
-                <div class="max-w-xl mx-auto bg-white/90 rounded-3xl p-8 soft-shadow border border-pink-100 space-y-6">
+                <div id="my-profile-container" class="max-w-md mx-auto bg-white/90 rounded-3xl p-6 soft-shadow border border-pink-100 space-y-4">
                     <div class="text-center">
-                        <img src="${myRecord?.image_url || 'https://via.placeholder.com/150?text=No+Image'}" onerror="this.src='https://via.placeholder.com/150?text=Error'" class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-pink-200 shadow-md" alt="Avatar">
-                        <h3 class="text-2xl font-bold text-slate-800">${currentUser.full_name}</h3>
-                        <p class="text-sm text-pink-500 font-medium">Username: ${currentUser.username}</p>
+                        <div class="w-20 h-20 rounded-full bg-slate-200 mx-auto mb-3 animate-pulse"></div>
+                        <h3 class="text-xl font-bold text-slate-800">${currentUser.full_name}</h3>
+                        <p class="text-xs text-pink-500 font-medium">Username: ${currentUser.username}</p>
                     </div>
-
-                    <div class="bg-pink-50/50 rounded-2xl p-6 space-y-4 border border-pink-100">
-                        <div class="flex justify-between items-center border-b border-pink-100 pb-3">
-                            <span class="text-slate-500 text-sm">รหัสพนักงาน</span>
-                            <span class="font-semibold text-slate-800 font-mono">${myRecord ? myRecord.employee_id : '-'}</span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-pink-100 pb-3">
-                            <span class="text-slate-500 text-sm">แผนก / ตำแหน่ง</span>
-                            <span class="font-semibold text-slate-800">${myRecord ? myRecord.department_position : 'ยังไม่ระบุในระบบพนักงาน'}</span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-pink-100 pb-3">
-                            <span class="text-slate-500 text-sm">เงินเดือน</span>
-                            <span class="font-semibold text-slate-800">${myRecord ? Number(myRecord.salary).toLocaleString() + ' บาท' : '-'}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500 text-sm">เบอร์โทรศัพท์</span>
-                            <span class="font-semibold text-slate-800">${myRecord ? myRecord.phone || '-' : '-'}</span>
-                        </div>
+                    <div class="bg-pink-50/50 rounded-2xl p-4 text-center text-xs text-slate-400">
+                        กำลังโหลดข้อมูลพนักงาน...
                     </div>
                 </div>
             `;
         }
 
+        function updateMyProfileUI() {
+            const container = document.getElementById('my-profile-container');
+            if (!container) return;
+            
+            const myRecord = myProfileData;
+            container.innerHTML = `
+                <div class="text-center">
+                    <img src="${myRecord?.image_url || 'https://via.placeholder.com/150?text=No+Image'}" onerror="this.src='https://via.placeholder.com/150?text=Error'" class="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-4 border-pink-200 shadow-md" alt="Avatar">
+                    <h3 class="text-xl font-bold text-slate-800">${currentUser.full_name}</h3>
+                    <p class="text-xs text-pink-500 font-medium">Username: ${currentUser.username}</p>
+                </div>
+
+                <div class="bg-pink-50/50 rounded-2xl p-4 space-y-3 border border-pink-100 text-xs md:text-sm">
+                    <div class="flex justify-between items-center border-b border-pink-100 pb-2">
+                        <span class="text-slate-500">รหัสพนักงาน</span>
+                        <span class="font-semibold text-slate-800 font-mono">${myRecord ? myRecord.employee_id : '-'}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-pink-100 pb-2">
+                        <span class="text-slate-500">แผนก / ตำแหน่ง</span>
+                        <span class="font-semibold text-slate-800">${myRecord ? myRecord.department_position : 'ยังไม่ระบุในระบบพนักงาน'}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-pink-100 pb-2">
+                        <span class="text-slate-500">เงินเดือน</span>
+                        <span class="font-semibold text-slate-800">${myRecord ? Number(myRecord.salary).toLocaleString() + ' บาท' : '-'}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">เบอร์โทรศัพท์</span>
+                        <span class="font-semibold text-slate-800">${myRecord ? myRecord.phone || '-' : '-'}</span>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
         function initTabLogic() {
-            // Placeholder for tab specific inits if needed
+            // Placeholder for tab specific inits
         }
     </script>
 </body>
